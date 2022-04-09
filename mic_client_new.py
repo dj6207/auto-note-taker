@@ -26,19 +26,42 @@ audio = pyaudio.PyAudio()
 
 stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
+
 def send_audio(time):
     frames = []
     while True:
         data = stream.read(CHUNK)
-        print(f"data length {len(data)}")
+        # print(f"data length {len(data)}")
         frames.append(data)
-        print(f"client: {len(frames)}")
+        # print(f"frames length: {len(frames)}")
         if len(frames) > time - 1:
             data = stream.read(CHUNK + 1)
             clientsocket.sendall(data)
+            printProgressBar(len(frames), time)
             break
         else:
             clientsocket.send(data)
+            printProgressBar(len(frames), time)
 
 def send_msg(msg):
     message = msg.encode(DECODE_FORMAT)
@@ -56,23 +79,19 @@ def main():
             print("Client disconnect from server")
             break
         elif message.split(" ")[0] == RECORD:
-            # send_msg(message)
             if (len(message.split(" ")) == 2):
                 time = (int) (message.split(" ")[1])
                 send_msg(message)
                 print("Recording")
                 send_audio(time)
-                # while True:
-                #     data = stream.read(CHUNK)
-                #     frames.append(data)
-                #     if len(frames) > time:
-                #         break
-                #     clientsocket.send(data)
             else:
                 print("record (seconds)")
 
         else:
             send_msg(message)
+    stream.close
+    clientsocket.close
+    audio.close
 
 if __name__ == "__main__":
     main()

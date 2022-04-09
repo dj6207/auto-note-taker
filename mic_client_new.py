@@ -26,7 +26,19 @@ audio = pyaudio.PyAudio()
 
 stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
-
+def send_audio(time):
+    frames = []
+    while True:
+        data = stream.read(CHUNK)
+        print(f"data length {len(data)}")
+        frames.append(data)
+        print(f"client: {len(frames)}")
+        if len(frames) > time - 1:
+            data = stream.read(CHUNK + 1)
+            clientsocket.sendall(data)
+            break
+        else:
+            clientsocket.send(data)
 
 def send_msg(msg):
     message = msg.encode(DECODE_FORMAT)
@@ -43,6 +55,22 @@ def main():
             send_msg(message)
             print("Client disconnect from server")
             break
+        elif message.split(" ")[0] == RECORD:
+            # send_msg(message)
+            if (len(message.split(" ")) == 2):
+                time = (int) (message.split(" ")[1])
+                send_msg(message)
+                print("Recording")
+                send_audio(time)
+                # while True:
+                #     data = stream.read(CHUNK)
+                #     frames.append(data)
+                #     if len(frames) > time:
+                #         break
+                #     clientsocket.send(data)
+            else:
+                print("record (seconds)")
+
         else:
             send_msg(message)
 

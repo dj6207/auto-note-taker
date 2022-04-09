@@ -2,6 +2,9 @@ import pyaudio
 import socket
 import wave
 import threading
+import select
+
+
 
 HEADER = 64
 DECODE_FORMAT = 'utf-8'
@@ -21,19 +24,42 @@ audio = pyaudio.PyAudio()
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serversocket.bind(ADDRESS)
 
+def record_audio(conn, time):
+    frames = []
+    print("Start Recording")
+    while len(frames) <= time:
+        print("recording")
+        data = conn.recv(2000)
+        frames.append(data)
+        # print(f"server: {len(frames)}")
+        # print(data)
+    print("Finished recording")
+    return frames
+
+
+
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected")
     connected = True
     while connected:
-        record_time = 0
-        frames =[]
         msg_len = conn.recv(HEADER).decode(DECODE_FORMAT)
+        # try:
+        #     msg_len = conn.recv(HEADER).decode(DECODE_FORMAT)
+        # except UnicodeDecodeError:
+        #     msg_len = conn.recv(HEADER)
+        #     print(f"message length stuff {msg_len}")
+        #     msg_len = msg_len.decode(DECODE_FORMAT)
+        # print(msg_len)  
         if msg_len:
             msg_len = int(msg_len)
             msg = conn.recv(msg_len).decode(DECODE_FORMAT)
             if msg == DISCONNECT_MSG:
                 print(f"[{addr}] disconnected")
                 connected = False
+            elif msg.split(" ")[0] == RECORD:
+                if (len(msg.split(" ")) == 2):
+                    time = (int) (msg.split(" ")[1])
+                    frames = record_audio(conn, time)
             else:
                 print (f"[{addr}] {msg}")
     conn.close()

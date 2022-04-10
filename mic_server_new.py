@@ -2,8 +2,8 @@ import pyaudio
 import socket
 import wave
 import threading
-
-
+import transcrib
+import shutil
 
 HEADER = 64
 DECODE_FORMAT = 'utf-8'
@@ -19,11 +19,13 @@ ADDRESS = (SERVER, PORT)
 WAVE_OUTPUT_FILENAME = "output.wav"
 
 audio = pyaudio.PyAudio()
+BASE_PATH = "C:/Users/Devin/Videos/audiorecorder/"
+TRANSCRIBE_PATH = "C:/Users/Devin/Videos/wav2/audio/"
 
 serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 serversocket.bind(ADDRESS)
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+def printProgressBar (iteration, total, prefix = 'Progress', suffix = 'Complete', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -44,14 +46,13 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if iteration == total: 
         print()
 
+
 def record_audio(conn, time):
     frames = []
-    print("Start Recording")
     while len(frames) <= time:
         printProgressBar(len(frames), time)
         data = conn.recv(2000)
         frames.append(data)
-    print("Finished recording")
     return frames
 
 def create_wavfile(frames):
@@ -61,7 +62,8 @@ def create_wavfile(frames):
     wf.setframerate(RATE)
     wf.writeframes(b''.join(frames))
     wf.close()
-    print("Wav file generated")
+    shutil.move(BASE_PATH + WAVE_OUTPUT_FILENAME, TRANSCRIBE_PATH + WAVE_OUTPUT_FILENAME)
+    # print("Wav file generated")
 
 def handle_client(conn, addr):
     print(f"[NEW CONNECTION] {addr} connected")
@@ -76,9 +78,10 @@ def handle_client(conn, addr):
                 connected = False
             elif msg.split(" ")[0] == RECORD:
                 if (len(msg.split(" ")) == 2):
-                    time = (int) (msg.split(" ")[1])
+                    time = ((int) (msg.split(" ")[1])) * 45.3
                     frames = record_audio(conn, time)
                     create_wavfile(frames)
+                    print(transcrib.speech_to_data())
             else:
                 print (f"[{addr}] {msg}")
     conn.close()

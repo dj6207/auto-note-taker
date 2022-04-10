@@ -14,6 +14,8 @@ SERVER = socket.gethostbyname(socket.gethostname())
 # Tuple of Server and Port
 ADDR = (SERVER, PORT)
 
+COMMANDS = ["- quit", "- record (seconds)"]
+
 HEADER = 64
 DECODE_FORMAT = 'utf-8'
 DISCONNECT_MSG = "quit"
@@ -26,7 +28,7 @@ audio = pyaudio.PyAudio()
 
 stream = audio.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+def printProgressBar (iteration, total, prefix = 'Progress', suffix = 'Complete', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -80,7 +82,7 @@ def main():
             break
         elif message.split(" ")[0] == RECORD:
             if (len(message.split(" ")) == 2):
-                time = (int) (message.split(" ")[1])
+                time = ((int) (message.split(" ")[1])) * 45.3
                 send_msg(message)
                 print("Recording")
                 send_audio(time)
@@ -89,6 +91,9 @@ def main():
 
         else:
             send_msg(message)
+            print("Type a valid command")
+            for item in COMMANDS:
+                print(item)
     stream.close
     clientsocket.close
     audio.close

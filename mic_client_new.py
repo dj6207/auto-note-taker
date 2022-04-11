@@ -68,7 +68,7 @@ def send_audio(time):
         frames.append(data)
         if len(frames) > time - 1:
             data = stream.read(CHUNK + 1)
-            clientsocket.sendall(data)
+            clientsocket.send(data)
             printProgressBar(len(frames), time)
             break
         else:

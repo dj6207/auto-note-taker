@@ -4,8 +4,7 @@ import threading
 import shutil
 import wave
 import datetime
-import transcribe
-import os
+# import transcribe
 
 HEADER = 64
 DECODE_FORMAT = "utf-8"
@@ -18,10 +17,10 @@ AUDIO_FORMAT = pyaudio.paInt16
 CHANNELS = 1
 RATE = 44100
 
-WAVE_OUTPUT_FILENAME = "output"
+# WAVE_OUTPUT_FILENAME = "output"
 FILE_EXTENSION = ".wav"
-BASE_PATH = "C:/Users/Devin/Videos/audiorecorder/"
-TRANSCRIBE_PATH = "C:/Users/Devin/Videos/wav2/audio/"
+BASE_PATH = "C:/Users/frost/OneDrive/Documents/audiorecorder/auto-note-taker/"
+TRANSCRIBE_PATH = "C:/Users/frost/OneDrive/Documents/audiorecorder/Transcribe_Path/"
 
 SERVER = socket.gethostbyname(socket.gethostname())
 CMD_PORT = 5050
@@ -34,15 +33,20 @@ AUD_SERVERSOCKET = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 AUD_SERVERSOCKET.bind(AUD_ADDRESS)
  
 def create_wavfile(frames):
-    file_number = len(os.listdir(TRANSCRIBE_PATH))
-    output_name = WAVE_OUTPUT_FILENAME + str(file_number) + FILE_EXTENSION
+    # file_number = len(os.listdir(TRANSCRIBE_PATH))
+    # output_name = WAVE_OUTPUT_FILENAME + str(file_number) + FILE_EXTENSION
+    output_name = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + FILE_EXTENSION
     wf = wave.open(output_name, 'wb')
     wf.setnchannels(CHANNELS)
     wf.setsampwidth(AUDIO.get_sample_size(AUDIO_FORMAT))
     wf.setframerate(RATE)
     wf.writeframes(b''.join(frames))
     wf.close()
-    shutil.move(BASE_PATH + output_name, TRANSCRIBE_PATH + output_name)
+    try:
+        shutil.move(BASE_PATH + output_name, TRANSCRIBE_PATH + output_name)
+    except FileNotFoundError as fnf:
+        print(fnf)
+
 
 def record_audio(aud_conn, recording, frames):
     while True:
@@ -51,47 +55,52 @@ def record_audio(aud_conn, recording, frames):
             frames.append(data)
 
 def handle_client(cmd_conn, cmd_addr):
-    frames = []
-    recording = threading.Event()
-    recording.clear()
-    aud_conn, aud_addr = AUD_SERVERSOCKET.accept()
-    aud_thread = threading.Thread(target=record_audio, args=(aud_conn, recording, frames))
-    aud_thread.start()
-    print(f"{aud_addr} Audio Socket Connected")
-    while True:
-        msg_len = cmd_conn.recv(HEADER).decode(DECODE_FORMAT)
-        if msg_len:
-            msg_len = int(msg_len)
-            msg = cmd_conn.recv(msg_len).decode(DECODE_FORMAT)
-            if msg == DISCONNECT_MSG:
-                print(f"{cmd_addr} Disconnected")
-            elif msg == RECORD:
-                if recording.is_set():
-                    print (f"{cmd_addr} {msg}")
-                    continue
-                else:
-                    print(f"{cmd_addr} Recording starting")
-                    recording.set()
-            elif msg == STOP:
-                if recording.is_set():
-                    print(f"{cmd_addr} Recording stopped")
+    try:
+        frames = []
+        recording = threading.Event()
+        recording.clear()
+        aud_conn, aud_addr = AUD_SERVERSOCKET.accept()
+        aud_thread = threading.Thread(target=record_audio, args=(aud_conn, recording, frames))
+        aud_thread.start()
+        print(f"{aud_addr} Audio Socket Connected")
+        while True:
+            msg_len = cmd_conn.recv(HEADER).decode(DECODE_FORMAT)
+            if msg_len:
+                msg_len = int(msg_len)
+                msg = cmd_conn.recv(msg_len).decode(DECODE_FORMAT)
+                if msg == DISCONNECT_MSG:
+                    print(f"{cmd_addr} Disconnected")
                     recording.clear()
-                    create_wavfile(frames)
-                    print(transcribe.speech_to_text())
-                    print("Finished Transcribing")
                     frames.clear()
+                elif msg == RECORD:
+                    if recording.is_set():
+                        print (f"{cmd_addr} {msg}")
+                        continue
+                    else:
+                        print(f"{cmd_addr} Recording starting")
+                        recording.set()
+                elif msg == STOP:
+                    if recording.is_set():
+                        print(f"{cmd_addr} Recording stopped")
+                        recording.clear()
+                        create_wavfile(frames)
+                        # print(transcribe.speech_to_text())
+                        # print("Finished Transcribing")
+                        frames.clear()
+                    else:
+                        print (f"{cmd_addr} {msg}")
+                        continue
                 else:
                     print (f"{cmd_addr} {msg}")
-                    continue
-            else:
-                print (f"{cmd_addr} {msg}")
+    except socket.error as msg:
+        print(f"Socket Error: {msg}" )
 
 def start():
     print("Server starting")
     CMD_SERVERSOCKET.listen()
     AUD_SERVERSOCKET.listen()
     print(f"Server ip {SERVER}")
-    print(datetime.datetime.now())
+    print(datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
     while True:
         cmd_conn, cmd_addr = CMD_SERVERSOCKET.accept()
         print(f"{cmd_addr} Command Socket Connected")

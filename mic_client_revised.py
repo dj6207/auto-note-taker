@@ -1,6 +1,7 @@
 import pyaudio
 import socket
 import threading
+from datetime import datetime
 
 HEADER = 64
 ENCODE_FORMAT = "utf-8"
@@ -8,6 +9,7 @@ DISCONNECT_MSG = "quit"
 RECORD = "record"
 STOP = "stop"
 HELP = "help"
+TIME = "time"
 
 COMMANDS = """
 record   Starts recording audio
@@ -46,31 +48,33 @@ def send_msg(msg):
 
 def server_comm(cmd_clientsocket, aud_clientsocket):
     try:
-        cmd_clientsocket.connect(CMD_ADDRESS)
-        aud_clientsocket.connect(AUD_ADDRESS)
-        stream = AUDIO.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
         recording = threading.Event()
         audio_connected = threading.Event()
         recording.clear()
+        stream = AUDIO.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+        cmd_clientsocket.connect(CMD_ADDRESS)
+        aud_clientsocket.connect(AUD_ADDRESS)
+        # start_time = time.time()
+        start_time = datetime.now()
+
         audio_connected.set()
         AUD_thread = threading.Thread(target=send_audio, args=(aud_clientsocket, recording, stream, audio_connected))
         AUD_thread.start()
         while True:
             message = input("Input command: ")
-            send_msg(message)
             if message == DISCONNECT_MSG:
-                recording.clear()
-                audio_connected.clear()
-                AUD_thread.join()
                 print("Disconnecting from server")
                 break
-            elif message == RECORD:
+            send_msg(message)
+            if message == RECORD:
                 if recording.is_set():
                     print("Recording had already started")
                     continue
                 else:
                     print("Start Recording")
                     recording.set()
+                    # start_time = time.time()
+                    start_time = datetime.now()
             elif message == STOP:
                 if recording.is_set():
                     print("Stopped Recording")
@@ -80,13 +84,28 @@ def server_comm(cmd_clientsocket, aud_clientsocket):
                     continue
             elif message == HELP:
                 print(COMMANDS)
+            elif message == TIME:
+                if recording.is_set():
+                    # current_time = time.time()
+                    current_time = datetime.now()
+                    # elapsed = (current_time - start_time)/60
+                    elapsed = current_time - start_time
+                    print(f"Time Elapsed: {elapsed}")
+                else:
+                    print("Recording has not started")
+                    continue
             else:
                 print("Type a valid command")
+    except socket.error as msg:
+        print(f"Socket Error: {msg}" )
+    finally:
+        recording.clear()
+        audio_connected.clear()
+        AUD_thread.join()
+        send_msg(DISCONNECT_MSG)
         cmd_clientsocket.close()
         aud_clientsocket.close()
         stream.close()
-    except socket.error as msg:
-        print(f"Socket Error: {msg}" )
 
 def start():
     CMD_thread = threading.Thread(target=server_comm, args=(CMD_CLIENTSOCKET, AUD_CLIENTSOCKET))

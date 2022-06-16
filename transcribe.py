@@ -11,10 +11,10 @@ import subprocess
 SAMPLE_RATE = 16000
 BLOCK_LENGTH = 30
 
-BASE_PATH = "C:/Users/Devin/Videos/wav2/audio/"
-CONVERTED_AUDIO_PATH = "C:/Users/Devin/Videos/wav2/pathconverted/"
-RESAMPLED_FOLDER = "C:/Users/Devin/Videos/wav2/resampled/"
-AUDIO_REPORT_FOLDER = "C:/Users/Devin/Videos/wav2/audioreport/"
+BASE_PATH = "C:/Users/frost/OneDrive/Documents/audiorecorder/Transcribe_Path/"
+CONVERTED_AUDIO_PATH = "C:/Users/frost/OneDrive/Documents/audiorecorder/Converted_Audio_Path/"
+RESAMPLED_FOLDER = "C:/Users/frost/OneDrive/Documents/audiorecorder/Resampled_Folder/"
+AUDIO_REPORT_FOLDER = "C:/Users/frost/OneDrive/Documents/audiorecorder/Audio_Report/"
 
 EXTENSIONS_TO_CONVERT = ['.mp3','.mp4']
 
@@ -48,11 +48,15 @@ def asr_transcript(processor, model, resampled_path, length, block_length):
         chunks += 1
     transcript = ""   
     stream = librosa.stream(resampled_path, block_length=block_length, frame_length=16000, hop_length=16000)
+    print ('Every chunk is ',block_length,'sec. long')
+    print("Number of chunks",int(chunks))
     for n, speech in enumerate(stream):
+        print ("Transcribing the chunk number " + str(n+1))
         separator = ' '
         if n % 2 == 0:
             separator = '\n'
         transcript += generate_transcription(speech, processor, model) + separator
+    print("Encoding complete. Total number of chunks: " + str(n+1) + "\n")
     return transcript
 
 def generate_transcription(speech, processor, model):
@@ -83,3 +87,6 @@ def speech_to_text():
         transcript = asr_transcript(PROCESSOR, MODEL, resampled_path, length, BLOCK_LENGTH)
         generate_textfile(transcript, AUDIO_REPORT_FOLDER, file, length)
     return transcript
+
+if __name__ == "__main__":
+    print(speech_to_text())

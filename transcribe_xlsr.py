@@ -24,8 +24,8 @@ AUDIO_REPORT_FOLDER = "C:/Users/Devin/Videos/wav2/audioreport/"
 
 EXTENSIONS_TO_CONVERT = ['.mp3','.mp4']
 
-PROCESSOR = Wav2Vec2Processor.from_pretrained("facebook/wav2vec2-large-960h-lv60-self")
-MODEL = Wav2Vec2ForCTC.from_pretrained("facebook/wav2vec2-large-960h-lv60-self")
+PROCESSOR = Wav2Vec2Processor.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-english")
+MODEL = Wav2Vec2ForCTC.from_pretrained("jonatasgrosman/wav2vec2-large-xlsr-53-english")
 
 def preprocessing(base_path, converted_audio_path):
     for file in os.listdir(base_path):
@@ -75,7 +75,7 @@ def generate_transcription(speech, processor, model):
         speech = speech[:, 0] + speech[:, 1]   
     input_values = processor(speech, sampling_rate = SAMPLE_RATE, return_tensors="pt").input_values
     logits = model(input_values).logits             
-    predicted_ids = torch.argmax(logits, dim=-1)
+    predicted_ids = torch.argmax(logits, dim=-1)       
     transcription = processor.decode(predicted_ids[0])
     return transcription.lower()
 

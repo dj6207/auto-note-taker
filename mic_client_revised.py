@@ -52,6 +52,9 @@ def server_comm(cmd_clientsocket, aud_clientsocket):
         audio_connected = threading.Event()
         recording.clear()
         stream = AUDIO.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
+
+        
+
         cmd_clientsocket.connect(CMD_ADDRESS)
         aud_clientsocket.connect(AUD_ADDRESS)
         # start_time = time.time()

@@ -31,7 +31,7 @@ CMD_SERVERSOCKET = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 CMD_SERVERSOCKET.bind(CMD_ADDRESS)
 AUD_SERVERSOCKET = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 AUD_SERVERSOCKET.bind(AUD_ADDRESS)
- 
+
 def create_wavfile(frames):
     # file_number = len(os.listdir(TRANSCRIBE_PATH))
     # output_name = WAVE_OUTPUT_FILENAME + str(file_number) + FILE_EXTENSION

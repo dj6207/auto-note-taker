@@ -1,3 +1,4 @@
+from tkinter import EXCEPTION
 import pyaudio
 import socket
 import threading
@@ -47,20 +48,21 @@ def send_msg(msg, cmd_clientsocket):
     cmd_clientsocket.send(message)
 
 def server_comm(cmd_clientsocket, aud_clientsocket):
+    print(type(cmd_clientsocket))
+    cmd_clientsocket.connect(CMD_ADDRESS)
+    aud_clientsocket.connect(AUD_ADDRESS)
+    recording = threading.Event()
+    audio_connected = threading.Event()
+    AUD_thread = threading.Thread(target=send_audio, args=(aud_clientsocket, recording, stream, audio_connected))
     try:
-        with AUDIO.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK) as  stream:
-            recording = threading.Event()
-            audio_connected = threading.Event()
-            recording.clear()
-        # stream = AUDIO.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
-            cmd_clientsocket.connect(CMD_ADDRESS)
-            aud_clientsocket.connect(AUD_ADDRESS)
-            # start_time = time.time()
-            start_time = datetime.now()
+        recording.clear()
+        # start_time = time.time()
+        start_time = datetime.now()
 
-            audio_connected.set()
-            AUD_thread = threading.Thread(target=send_audio, args=(aud_clientsocket, recording, stream, audio_connected))
-            AUD_thread.start()
+        audio_connected.set()
+        AUD_thread.start()
+        with AUDIO.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK) as  stream:
+        # stream = AUDIO.open(format=AUDIO_FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK)
             while True:
                 message = input("Input command: ")
                 if message == DISCONNECT_MSG:
